@@ -11,16 +11,25 @@ local physics = require( "physics" )
 physics.start()
 physics.setGravity( 0, 0 )
 
+-- Set up display groups
+local backGroup = display.newGroup()  -- Display group for the background image
+local mainGroup = display.newGroup()  -- Display group for the ship, asteroids, lasers, etc.
+local uiGroup = display.newGroup()
+
 local score = 0
 local died = false
+local haveJetpack = false
 local arePlatformsMoving = false
  
 local platformsTable = {}
 local aliensTables = {}
 
+local plateformDimensionX = 75
+local plateformDimensionY = 13
+
 local player
 local gameLoopTimer
-local scoreText
+local scoreText = display.newText( uiGroup, "Score : " .. score, display.contentCenterX, 20, native.systemFont, 30 )
 
 local gravity = 0.005
 local playerVel = 0.0
@@ -30,9 +39,29 @@ local playerXVel = 0.0
 
 local maxVel = 7.0
 
--- Set up display groups
-local backGroup = display.newGroup()  -- Display group for the background image
-local mainGroup = display.newGroup()  -- Display group for the ship, asteroids, lasers, etc.
+local jetpackSheetOptions =
+{
+    width = 32,
+    height = 64,
+    sheetContentWidth  = 128,
+    sheetContentHeight  = 192,
+    numFrames = 10
+}
+
+local sequences_jetpack = {
+    -- consecutive frames sequence
+    {
+        name = "jetpack_animation",
+        frames = { 1, 4, 7, 10, 2, 5, 8, 11, 3, 6, 9, 12 },
+        time = 800,
+        loopCount = 0
+    }
+}
+
+local sheet_jetpack = graphics.newImageSheet("./resources/jetpack_sheet.png", jetpackSheetOptions )
+local jetpack_animation = display.newSprite(mainGroup, sheet_jetpack, sequences_jetpack)
+
+local jetpack
 
 -- Seed the random number generator
 math.randomseed(os.time())
@@ -43,7 +72,7 @@ background.x = display.contentCenterX
 background.y = display.contentCenterY
 
 -- Load the player
-player = display.newImageRect( mainGroup, "./resources/player_right.png", 62, 60 )
+player = display.newImageRect( mainGroup, "./resources/player_left.png", 62, 60 )
 player.x = display.contentCenterX
 player.y = display.contentHeight - 250
 physics.addBody( player, "dynamic", { radius=30, isSensor=true } )
@@ -52,19 +81,37 @@ player.myName = "player"
 -- Hide the status bar
 display.setStatusBar( display.HiddenStatusBar )
 
+local function endOfJetpack()
+    local gravity = 0.005
+    haveJetpack = false
+    jetpack_animation.x = display.contentWidth * 2
+end
+
+local function createJetpack(offsetStart, offsetEnd)
+    jetpack = display.newImageRect(mainGroup, "./resources/jetpack.png", 25, 38)
+    jetpack.x = math.random(0, display.contentWidth)
+    jetpack.y = math.random(offsetStart, offsetEnd)
+    jetpack.myName = "jetpack"
+    physics.addBody( jetpack, "static")
+    table.insert( platformsTable, jetpack )
+    timer.performWithDelay(5000, endOfJetpack)
+end
+
 local function createSinglePlatform(offsetStart, offsetEnd)
-    local newPlatform = display.newImageRect( mainGroup, "./resources/platform.png", 75, 13 )
+    local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY )
     table.insert( platformsTable, newPlatform )
     physics.addBody( newPlatform, "static")
     newPlatform.myName = "platform"
 
     newPlatform.x = math.random(newPlatform.width / 2, display.contentWidth - newPlatform.width / 2)
     newPlatform.y = math.random(offsetStart, offsetEnd)
+
+    newPlatform:toBack()
 end
 
 local function initializePlatforms()
     -- Create a platform at the bottom
-    local newPlatform = display.newImageRect( mainGroup, "./resources/platform.png", 150, 25 )
+    local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY)
     table.insert( platformsTable, newPlatform )
     physics.addBody( newPlatform, "static")
     newPlatform.myName = "platform"
@@ -79,25 +126,32 @@ local function initializePlatforms()
     end
 end
 
-local function updatePlayerYPosition()
-    -- Apply basic physic
-    playerAcc = playerAcc + gravity
-    playerVel = playerVel + playerAcc
+local function updatePlayerPosition()
+    -- Update player x position
+    player.x = player.x + playerXVel
+    
+    if not haveJetpack then
+        -- Apply basic physic
+        playerAcc = playerAcc + gravity
+        playerVel = playerVel + playerAcc
 
-    -- Limit the max velocity
-    if (playerVel > maxVel) then
-        playerVel = maxVel
-    elseif (playerVel < -maxVel) then
-        playerVel = -maxVel
+        -- Limit the max velocity
+        if (playerVel > maxVel) then
+            playerVel = maxVel
+        elseif (playerVel < -maxVel) then
+            playerVel = -maxVel
+        end
+    else
+            -- Apply basic physic
+        playerVel = -15
+        jetpack_animation.x = player.x + player.width / 2 - 10
+        jetpack_animation.y = player.y + player.height / 2 - 10
     end
-
+    
     -- Don't move up the player if platforms are moving
     if(not arePlatformsMoving) then
         player.y = player.y + playerVel
     end
-
-    -- Update player x position
-    player.x = player.x + playerXVel
 
     -- If the player goes offscreen on the right, teleport it on the left
     -- Same from left to right
@@ -109,8 +163,8 @@ local function updatePlayerYPosition()
 end
 
 local function updatePlayerXPosition(event)
-    if ( event.phase == "down" ) then
-        if ( event.keyName == "d" ) then
+    if (event.phase == "down") then
+        if (event.keyName == "d") then
             playerXVel = 5
         elseif event.keyName == "a" then
             playerXVel = -5
@@ -120,9 +174,15 @@ local function updatePlayerXPosition(event)
     end
 end
 
+local function updateScore()
+    scoreText.text = "Score: " .. math.floor(score)
+end
+
 local function updatePlatforms()
     -- If the height of the player is above the middle of the screen
     if (player.y < display.contentHeight / 2 and playerVel < 0) then
+        score = score - playerVel / 10
+        updateScore()
         -- Move down the platforms by the inverse of the player velocity
         arePlatformsMoving = true
         for i = #platformsTable, 1, -1 do
@@ -132,7 +192,6 @@ local function updatePlatforms()
     else
         arePlatformsMoving = false
     end
-
 end
 
 local function onCollision(event)
@@ -160,13 +219,39 @@ local function onCollision(event)
                 playerAcc = 0.0
                 playerVel = -maxVel
             end
+        elseif 
+            (obj1.myName == "jetpack" and obj2.myName == "player" ) 
+            or
+            (obj1.myName == "player" and obj2.myName == "jetpack")
+            then
+            display.remove(jetpack)
+            for i = #platformsTable, 1, -1 do
+                local currentObject = platformsTable[i]
+                if jetpack == currentObject then
+                    table.remove(platformsTable, i)
+                end
+            end
+
+            jetpack_animation:play()
+
+            haveJetpack = true
         end
     end
 end
 
+local function checkPlayerDied()
+    return player.y - player.height / 2 > display.contentHeight
+end
+
 local function gameLoop()
-    updatePlayerYPosition()
-    updatePlatforms()
+    died = checkPlayerDied()
+
+    if not died then
+        updatePlayerPosition()
+        updatePlatforms()
+    else
+        -- print("died")
+    end
 
     -- Remove platforms which have drifted off screen
     for i = #platformsTable, 1, -1 do
@@ -176,14 +261,18 @@ local function gameLoop()
         then
             display.remove(currentPlatform)
             table.remove(platformsTable, i)
-            createSinglePlatform(-display.contentHeight / 5, 0)
+            if math.random(0, 50) > 1 or haveJetpack then
+                createSinglePlatform(-display.contentHeight / 5, 0)
+            else
+                createJetpack(-display.contentHeight / 5, 0)
+            end
         end
     end
 end
 
 initializePlatforms()
 
-gameLoopTimer = timer.performWithDelay( 1000 / 60, gameLoop, 0 )
+gameLoopTimer = timer.performWithDelay(1000 / 60, gameLoop, 0)
 
 Runtime:addEventListener("key", updatePlayerXPosition)
 Runtime:addEventListener("collision", onCollision)
