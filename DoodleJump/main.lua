@@ -52,14 +52,14 @@ player.myName = "player"
 -- Hide the status bar
 display.setStatusBar( display.HiddenStatusBar )
 
-local function createSinglePlatform(yOffset, randomHeightFactor)
+local function createSinglePlatform(offsetStart, offsetEnd)
     local newPlatform = display.newImageRect( mainGroup, "./resources/platform.png", 75, 13 )
     table.insert( platformsTable, newPlatform )
     physics.addBody( newPlatform, "static")
     newPlatform.myName = "platform"
 
     newPlatform.x = math.random(newPlatform.width / 2, display.contentWidth - newPlatform.width / 2)
-    newPlatform.y = math.random(0, (display.contentHeight - newPlatform.height) * randomHeightFactor) + yOffset
+    newPlatform.y = math.random(offsetStart, offsetEnd)
 end
 
 local function initializePlatforms()
@@ -69,31 +69,38 @@ local function initializePlatforms()
     physics.addBody( newPlatform, "static")
     newPlatform.myName = "platform"
 
+    -- Set its position
     newPlatform.x = display.contentCenterX
     newPlatform.y = display.contentHeight - 50
 
+    -- Create 10 random platforms
     for i=1, 10 do
-        createSinglePlatform(0, 1)
+        createSinglePlatform(-display.contentHeight / 4, display.contentHeight)
     end
 end
 
 local function updatePlayerYPosition()
+    -- Apply basic physic
     playerAcc = playerAcc + gravity
     playerVel = playerVel + playerAcc
 
+    -- Limit the max velocity
     if (playerVel > maxVel) then
         playerVel = maxVel
     elseif (playerVel < -maxVel) then
         playerVel = -maxVel
     end
 
+    -- Don't move up the player if platforms are moving
     if(not arePlatformsMoving) then
         player.y = player.y + playerVel
     end
 
-    print(playerXVel)
+    -- Update player x position
     player.x = player.x + playerXVel
 
+    -- If the player goes offscreen on the right, teleport it on the left
+    -- Same from left to right
     if player.x < 0 then
         player.x = display.contentWidth
     elseif player.x > display.contentWidth then
@@ -114,11 +121,12 @@ local function updatePlayerXPosition(event)
 end
 
 local function updatePlatforms()
+    -- If the height of the player is above the middle of the screen
     if (player.y < display.contentHeight / 2 and playerVel < 0) then
+        -- Move down the platforms by the inverse of the player velocity
         arePlatformsMoving = true
         for i = #platformsTable, 1, -1 do
             local currentPlatform = platformsTable[i]
-
             currentPlatform.y = currentPlatform.y - playerVel
         end
     else
@@ -129,7 +137,6 @@ end
 
 local function onCollision( event )
     if ( event.phase == "began" ) then
- 
         local obj1 = event.object1
         local obj2 = event.object2
 
@@ -155,7 +162,7 @@ local function gameLoop()
         then
             display.remove( currentPlatform )
             table.remove( platformsTable, i )
-            createSinglePlatform(-display.contentHeight / 4, 0.5)
+            createSinglePlatform(-display.contentHeight / 4, 0)
         end
     end
 end
