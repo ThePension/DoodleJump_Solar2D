@@ -172,7 +172,7 @@ local function gameLoop()
     for i = #platformsTable, 1, -1 do
         local currentPlatform = platformsTable[i]
  
-        if (currentPlatform.y > display.contentHeight + 100)
+        if (currentPlatform.y - currentPlatform.height / 2 > display.contentHeight)
         then
             display.remove(currentPlatform)
             table.remove(platformsTable, i)
