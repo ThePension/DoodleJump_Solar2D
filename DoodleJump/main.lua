@@ -135,17 +135,31 @@ local function updatePlatforms()
 
 end
 
-local function onCollision( event )
-    if ( event.phase == "began" ) then
+local function onCollision(event)
+    if (event.phase == "began") then
         local obj1 = event.object1
         local obj2 = event.object2
+        local collidedPlatform
 
-        if ( (( obj1.myName == "player" and obj2.myName == "platform" ) or
-             ( obj1.myName == "platform" and obj2.myName == "player" ))
-            and playerVel >= 0)
+        if (
+            (
+                (obj1.myName == "player" and obj2.myName == "platform" ) 
+                or
+                (obj1.myName == "platform" and obj2.myName == "player")
+            )
+            and playerVel >= 0
+        )
         then
-            playerAcc = 0.0
-            playerVel = -maxVel
+            if obj1.myName == "platform" then
+                collidedPlatform = obj1
+            else
+                collidedPlatform = obj2
+            end
+
+            if (player.y  + player.height / 2 < collidedPlatform.y) then
+                playerAcc = 0.0
+                playerVel = -maxVel
+            end
         end
     end
 end
@@ -158,11 +172,11 @@ local function gameLoop()
     for i = #platformsTable, 1, -1 do
         local currentPlatform = platformsTable[i]
  
-        if ( currentPlatform.y > display.contentHeight + 100)
+        if (currentPlatform.y > display.contentHeight + 100)
         then
-            display.remove( currentPlatform )
-            table.remove( platformsTable, i )
-            createSinglePlatform(-display.contentHeight / 4, 0)
+            display.remove(currentPlatform)
+            table.remove(platformsTable, i)
+            createSinglePlatform(-display.contentHeight / 5, 0)
         end
     end
 end
