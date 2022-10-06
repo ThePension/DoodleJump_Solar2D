@@ -116,7 +116,7 @@ local function playerShoot()
     bullet.y = player.y - player.height / 2
     bullet.myName = "bullet"
     physics.addBody(bullet, "dynamic", {isSensor=true})
-    -- table.insert(objectsTable, bullet)
+    -- table.insert(objectsTable, bullet) -- Useless
     
     transition.to( bullet, { y=-40, time=500,
             onComplete = function() display.remove( bullet ) print("over") end
@@ -255,6 +255,18 @@ local function onCollision(event)
 
         if (
             (
+                (obj1.myName == "bullet" and obj2.myName == "monster" ) 
+                or
+                (obj1.myName == "monster" and obj2.myName == "bullet")
+            )
+        )
+        then
+            obj1.hasCollided = true
+            obj2.hasCollided = true
+        end
+
+        if (
+            (
                 (obj1.myName == "player" and obj2.myName == "platform" ) 
                 or
                 (obj1.myName == "platform" and obj2.myName == "player")
@@ -311,11 +323,9 @@ local function applyCollisionActions()
             if currentObject.myName == "monster" then
                 display.remove(currentObject)
                 table.remove(objectsTable, i)
-
-                score = 0
-                updateScore()
-
                 createRandomEntity(-display.contentHeight / 5, 0)
+            elseif currentObject.myName == "bullet" then
+                display.remove(currentObject)
             elseif currentObject.myName == "jetpack" then
                 display.remove(jetpack)
                 table.remove(objectsTable, i)
