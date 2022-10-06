@@ -33,10 +33,13 @@ local scoreText = display.newText( uiGroup, "Score : " .. score, display.content
 local gravity = 0.005
 local playerVel = 0.0
 local playerAcc = 0.0
+local playerDir = -1 -- 1 = left, -1 = right
 
 local playerXVel = 0.0
 
 local maxVel = 7.0
+
+local bulletSpeed = -4.0
 
 local jetpackSheetOptions =
 {
@@ -101,16 +104,29 @@ local function createMonster(offsetStart, offsetEnd)
     newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
     newMonster.y = math.random(offsetStart, offsetEnd)
     newMonster.myName = "monster"
-    physics.addBody( newMonster, "static")
+    physics.addBody( newMonster, "static", {isSensor=true})
     table.insert( objectsTable, newMonster )
 
     newMonster:toBack()
 end
 
+local function playerShoot()
+    local bullet = display.newImageRect(mainGroup, "./resources/bullet.png", 16, 16)
+    bullet.x = player.x
+    bullet.y = player.y - player.height / 2
+    bullet.myName = "bullet"
+    physics.addBody(bullet, "dynamic", {isSensor=true})
+    -- table.insert(objectsTable, bullet)
+    
+    transition.to( bullet, { y=-40, time=500,
+            onComplete = function() display.remove( bullet ) print("over") end
+        } )
+end
+
 local function createSinglePlatform(offsetStart, offsetEnd)
     local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY )
     table.insert( objectsTable, newPlatform )
-    physics.addBody( newPlatform, "static")
+    physics.addBody( newPlatform, "dynamic", {isSensor=true})
     newPlatform.myName = "platform"
 
     newPlatform.x = math.random(newPlatform.width / 2, display.contentWidth - newPlatform.width / 2)
@@ -135,7 +151,7 @@ local function initializePlatforms()
     -- Create a platform at the bottom
     local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY)
     table.insert( objectsTable, newPlatform )
-    physics.addBody( newPlatform, "static")
+    physics.addBody( newPlatform, "dynamic")
     newPlatform.myName = "platform"
 
     -- Set its position
@@ -188,8 +204,16 @@ local function updatePlayerXPosition(event)
     if (event.phase == "down") then
         if (event.keyName == "d") then
             playerXVel = 5
+            if player.xScale == 1 then
+                player.xScale = -1
+            end
         elseif event.keyName == "a" then
             playerXVel = -5
+            if player.xScale == -1 then
+                player.xScale = 1
+            end
+        elseif event.keyName == "space" then
+            playerShoot()
         end
     elseif event.phase == "up" then
         playerXVel = 0.0
@@ -220,6 +244,14 @@ local function onCollision(event)
     if (event.phase == "began") then
         local obj1 = event.object1
         local obj2 = event.object2
+
+        if (
+            obj1.myName == "platform" and obj2.myName == "platform"
+        ) then
+            print("platforms collision")
+            obj1.hasCollidedWithAnotherPlatform = true
+            return nil
+        end
 
         if (
             (
@@ -291,6 +323,10 @@ local function applyCollisionActions()
 
                 createRandomEntity(-display.contentHeight / 5, 0)
             end
+        elseif currentObject.hasCollidedWithAnotherPlatform then
+            display.remove(currentObject)
+            table.remove(objectsTable, i)
+            createSinglePlatform(-display.contentHeight / 5, 0)
         end
     end
 end
