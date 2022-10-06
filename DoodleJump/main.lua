@@ -220,7 +220,6 @@ local function onCollision(event)
     if (event.phase == "began") then
         local obj1 = event.object1
         local obj2 = event.object2
-        local collidedPlatform
 
         if (
             (
@@ -231,6 +230,8 @@ local function onCollision(event)
             and playerVel >= 0
         )
         then
+            local collidedPlatform
+
             if obj1.myName == "platform" then
                 collidedPlatform = obj1
             else
@@ -246,47 +247,22 @@ local function onCollision(event)
             or
             (obj1.myName == "player" and obj2.myName == "jetpack")
             then
-                
-            display.remove(jetpack)
-            for i = #objectsTable, 1, -1 do
-                local currentObject = objectsTable[i]
-                if jetpack == currentObject then
-                    table.remove(objectsTable, i)
-                end
-            end
+
+            jetpack.hasCollided = true
 
             jetpack_animation:play()
 
             haveJetpack = true
-
-            createRandomEntity(-display.contentHeight / 5, 0)
-
         elseif
-            (obj1.myName == "monster" and obj2.myName == "player" ) 
-            or
-            (obj1.myName == "player" and obj2.myName == "monster")
-            then
-            local collidedMonster
-
-            if obj1.myName == "monster"
-            then
-                collidedMonster = obj1
+                (obj1.myName == "monster" and obj2.myName == "player" ) 
+                or
+                (obj1.myName == "player" and obj2.myName == "monster")
+                then
+            if obj1.myName == "monster" then
+                obj1.hasCollided = true
             else
-                collidedMonster = obj2
+                obj2.hasCollided = true
             end
-
-            display.remove(collidedMonster)
-            for i = #objectsTable, 1, -1 do
-                local currentObject = objectsTable[i]
-                if collidedMonster == currentObject then
-                    table.remove(objectsTable, i)
-                end
-            end
-            
-            score = 0
-            updateScore()
-
-            createRandomEntity(-display.contentHeight / 5, 0)
         end
     end
 end
@@ -295,12 +271,37 @@ local function checkPlayerDied()
     return player.y - player.height / 2 > display.contentHeight
 end
 
+local function applyCollisionActions()
+    for i = #objectsTable, 1, -1 do
+        local currentObject = objectsTable[i]
+
+        if currentObject.hasCollided then
+            if currentObject.myName == "monster" then
+                display.remove(currentObject)
+                table.remove(objectsTable, i)
+
+                score = 0
+                updateScore()
+
+                createRandomEntity(-display.contentHeight / 5, 0)
+            elseif currentObject.myName == "jetpack" then
+                display.remove(jetpack)
+                table.remove(objectsTable, i)
+                jetpack.hasCollided = false
+
+                createRandomEntity(-display.contentHeight / 5, 0)
+            end
+        end
+    end
+end
+
 local function gameLoop()
     died = checkPlayerDied()
 
     if not died then
         updatePlayerPosition()
         updatePlatforms()
+        applyCollisionActions()
     else
         -- print("died")
     end
