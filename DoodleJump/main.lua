@@ -133,6 +133,18 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform.y = math.random(offsetStart, offsetEnd)
 
     newPlatform:toBack()
+
+    -- 5% chance of adding a spring
+    if math.random(0, 100) <= 5 then
+        local spring = display.newImageRect(mainGroup, "./resources/spring.png", 10, 20)
+        table.insert(objectsTable, spring)
+        physics.addBody(spring, "dynamic", {isSensor=true})
+        spring.myName = "spring"
+
+        spring.x = math.random(newPlatform.x - newPlatform.width / 2, newPlatform.x + newPlatform.width / 2)
+        spring.y = newPlatform.y - newPlatform.height / 2 - spring.height / 2
+        spring:toBack()
+    end
 end
 
 local function createRandomEntity(offsetStart, offsetEnd)
@@ -176,8 +188,6 @@ local function updatePlayerPosition()
         -- Limit the max velocity
         if (playerVel > maxVel) then
             playerVel = maxVel
-        elseif (playerVel < -maxVel) then
-            playerVel = -maxVel
         end
     else
         -- Apply basic physic
@@ -250,7 +260,6 @@ local function onCollision(event)
         ) then
             print("platforms collision")
             obj1.hasCollidedWithAnotherPlatform = true
-            return nil
         end
 
         if (
@@ -263,6 +272,19 @@ local function onCollision(event)
         then
             obj1.hasCollided = true
             obj2.hasCollided = true
+        end
+
+        if (
+            (
+                (obj1.myName == "player" and obj2.myName == "spring" ) 
+                or
+                (obj1.myName == "spring" and obj2.myName == "player")
+            )
+            and playerVel >= 0
+        ) then
+            print("spring")
+            playerAcc = 0.0
+            playerVel = -15
         end
 
         if (
@@ -361,7 +383,9 @@ local function gameLoop()
             display.remove(currentPlatform)
             table.remove(objectsTable, i)
             
-            createRandomEntity(-display.contentHeight / 5, 0)
+            if not (currentPlatform.myName == "spring") then
+                createRandomEntity(-display.contentHeight / 5, 0)
+            end
         end
     end
 end
