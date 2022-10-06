@@ -118,7 +118,7 @@ local function playerShoot()
     physics.addBody(bullet, "dynamic", {isSensor=true})
     -- table.insert(objectsTable, bullet) -- Useless
     
-    transition.to( bullet, { y=-40, time=500,
+    transition.to( bullet, { y=-40, x=0, time=500,
             onComplete = function() display.remove( bullet ) print("over") end
         } )
 end
@@ -135,15 +135,17 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform:toBack()
 
     -- 5% chance of adding a spring
-    if math.random(0, 100) <= 5 then
+    if math.random(0, 5) <= 5 then
         local spring = display.newImageRect(mainGroup, "./resources/spring.png", 10, 20)
-        table.insert(objectsTable, spring)
+        -- table.insert(objectsTable, spring)
         physics.addBody(spring, "dynamic", {isSensor=true})
         spring.myName = "spring"
 
-        spring.x = math.random(newPlatform.x - newPlatform.width / 2, newPlatform.x + newPlatform.width / 2)
-        spring.y = newPlatform.y - newPlatform.height / 2 - spring.height / 2
+        spring.x = math.random(newPlatform.x - newPlatform.width / 3, newPlatform.x + newPlatform.width / 3)
+        spring.y = newPlatform.y - newPlatform.height / 2 - spring.height / 2 + 3
         spring:toBack()
+
+        newPlatform.attachedObject = spring
     end
 end
 
@@ -244,6 +246,11 @@ local function updatePlatforms()
         for i = #objectsTable, 1, -1 do
             local currentPlatform = objectsTable[i]
             currentPlatform.y = currentPlatform.y - playerVel
+
+            -- Also update the attached object if exists
+            if not (currentPlatform.attachedObject == nil) then
+                currentPlatform.attachedObject.y = currentPlatform.y - currentPlatform.height / 2 - currentPlatform.attachedObject.height / 2 + 3
+            end
         end
     else
         arePlatformsMoving = false
@@ -356,6 +363,7 @@ local function applyCollisionActions()
                 createRandomEntity(-display.contentHeight / 5, 0)
             end
         elseif currentObject.hasCollidedWithAnotherPlatform then
+            display.remove(currentObject.attachedObject)
             display.remove(currentObject)
             table.remove(objectsTable, i)
             createSinglePlatform(-display.contentHeight / 5, 0)
@@ -370,6 +378,7 @@ local function gameLoop()
         updatePlayerPosition()
         updatePlatforms()
         applyCollisionActions()
+        print(#objectsTable)
     else
         -- print("died")
     end
@@ -380,6 +389,7 @@ local function gameLoop()
  
         if (currentPlatform.y - currentPlatform.height / 2 > display.contentHeight)
         then
+            display.remove(currentPlatform.attachedObject)
             display.remove(currentPlatform)
             table.remove(objectsTable, i)
             
