@@ -21,8 +21,7 @@ local died = false
 local haveJetpack = false
 local arePlatformsMoving = false
  
-local platformsTable = {}
-local aliensTables = {}
+local objectsTable = {}
 
 local plateformDimensionX = 75
 local plateformDimensionY = 13
@@ -89,17 +88,28 @@ end
 
 local function createJetpack(offsetStart, offsetEnd)
     jetpack = display.newImageRect(mainGroup, "./resources/jetpack.png", 25, 38)
-    jetpack.x = math.random(0, display.contentWidth)
+    jetpack.x = math.random(0 + jetpack.width / 2, display.contentWidth - jetpack.width / 2)
     jetpack.y = math.random(offsetStart, offsetEnd)
     jetpack.myName = "jetpack"
     physics.addBody( jetpack, "static")
-    table.insert( platformsTable, jetpack )
+    table.insert( objectsTable, jetpack )
     timer.performWithDelay(5000, endOfJetpack)
+end
+
+local function createMonster(offsetStart, offsetEnd)
+    local newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 60, 80)
+    newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
+    newMonster.y = math.random(offsetStart, offsetEnd)
+    newMonster.myName = "monster"
+    physics.addBody( newMonster, "static")
+    table.insert( objectsTable, newMonster )
+
+    newMonster:toBack()
 end
 
 local function createSinglePlatform(offsetStart, offsetEnd)
     local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY )
-    table.insert( platformsTable, newPlatform )
+    table.insert( objectsTable, newPlatform )
     physics.addBody( newPlatform, "static")
     newPlatform.myName = "platform"
 
@@ -109,10 +119,22 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform:toBack()
 end
 
+local function createRandomEntity(offsetStart, offsetEnd)
+    if math.random(0, 50) > 1 or haveJetpack then
+        if math.random(0, 20) > 1 or haveJetpack then
+            createSinglePlatform(-display.contentHeight / 5, 0)
+        else
+            createMonster(-display.contentHeight / 5, 0)
+        end
+    else
+        createJetpack(-display.contentHeight / 5, 0)
+    end
+end
+
 local function initializePlatforms()
     -- Create a platform at the bottom
     local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY)
-    table.insert( platformsTable, newPlatform )
+    table.insert( objectsTable, newPlatform )
     physics.addBody( newPlatform, "static")
     newPlatform.myName = "platform"
 
@@ -142,7 +164,7 @@ local function updatePlayerPosition()
             playerVel = -maxVel
         end
     else
-            -- Apply basic physic
+        -- Apply basic physic
         playerVel = -15
         jetpack_animation.x = player.x + player.width / 2 - 10
         jetpack_animation.y = player.y + player.height / 2 - 10
@@ -185,8 +207,8 @@ local function updatePlatforms()
         updateScore()
         -- Move down the platforms by the inverse of the player velocity
         arePlatformsMoving = true
-        for i = #platformsTable, 1, -1 do
-            local currentPlatform = platformsTable[i]
+        for i = #objectsTable, 1, -1 do
+            local currentPlatform = objectsTable[i]
             currentPlatform.y = currentPlatform.y - playerVel
         end
     else
@@ -224,17 +246,47 @@ local function onCollision(event)
             or
             (obj1.myName == "player" and obj2.myName == "jetpack")
             then
+                
             display.remove(jetpack)
-            for i = #platformsTable, 1, -1 do
-                local currentObject = platformsTable[i]
+            for i = #objectsTable, 1, -1 do
+                local currentObject = objectsTable[i]
                 if jetpack == currentObject then
-                    table.remove(platformsTable, i)
+                    table.remove(objectsTable, i)
                 end
             end
 
             jetpack_animation:play()
 
             haveJetpack = true
+
+            createRandomEntity(-display.contentHeight / 5, 0)
+
+        elseif
+            (obj1.myName == "monster" and obj2.myName == "player" ) 
+            or
+            (obj1.myName == "player" and obj2.myName == "monster")
+            then
+            local collidedMonster
+
+            if obj1.myName == "monster"
+            then
+                collidedMonster = obj1
+            else
+                collidedMonster = obj2
+            end
+
+            display.remove(collidedMonster)
+            for i = #objectsTable, 1, -1 do
+                local currentObject = objectsTable[i]
+                if collidedMonster == currentObject then
+                    table.remove(objectsTable, i)
+                end
+            end
+            
+            score = 0
+            updateScore()
+
+            createRandomEntity(-display.contentHeight / 5, 0)
         end
     end
 end
@@ -254,18 +306,15 @@ local function gameLoop()
     end
 
     -- Remove platforms which have drifted off screen
-    for i = #platformsTable, 1, -1 do
-        local currentPlatform = platformsTable[i]
+    for i = #objectsTable, 1, -1 do
+        local currentPlatform = objectsTable[i]
  
         if (currentPlatform.y - currentPlatform.height / 2 > display.contentHeight)
         then
             display.remove(currentPlatform)
-            table.remove(platformsTable, i)
-            if math.random(0, 50) > 1 or haveJetpack then
-                createSinglePlatform(-display.contentHeight / 5, 0)
-            else
-                createJetpack(-display.contentHeight / 5, 0)
-            end
+            table.remove(objectsTable, i)
+            
+            createRandomEntity(-display.contentHeight / 5, 0)
         end
     end
 end
