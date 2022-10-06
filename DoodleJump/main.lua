@@ -41,6 +41,7 @@ local maxVel = 7.0
 
 local bulletSpeed = -4.0
 
+local jetpack_flip_offset = 0
 local jetpackSheetOptions =
 {
     width = 32,
@@ -135,8 +136,8 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform:toBack()
 
     -- 5% chance of adding a spring
-    if math.random(0, 5) <= 5 then
-        local spring = display.newImageRect(mainGroup, "./resources/spring.png", 10, 20)
+    if math.random(0, 100) <= 5 then
+        local spring = display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
         -- table.insert(objectsTable, spring)
         physics.addBody(spring, "dynamic", {isSensor=true})
         spring.myName = "spring"
@@ -194,7 +195,7 @@ local function updatePlayerPosition()
     else
         -- Apply basic physic
         playerVel = -15
-        jetpack_animation.x = player.x + player.width / 2 - 10
+        jetpack_animation.x = player.x + player.width / 2 - 10 + jetpack_flip_offset
         jetpack_animation.y = player.y + player.height / 2 - 10
     end
     
@@ -218,11 +219,15 @@ local function updatePlayerXPosition(event)
             playerXVel = 5
             if player.xScale == 1 then
                 player.xScale = -1
+                jetpack_animation.xScale = -1
+                jetpack_flip_offset = -player.width / 2 - jetpack_animation.width / 2 + 5
             end
         elseif event.keyName == "a" then
             playerXVel = -5
             if player.xScale == -1 then
                 player.xScale = 1
+                jetpack_animation.xScale = 1
+                jetpack_flip_offset = 0
             end
         elseif event.keyName == "space" then
             playerShoot()
@@ -283,13 +288,14 @@ local function onCollision(event)
 
         if (
             (
-                (obj1.myName == "player" and obj2.myName == "spring" ) 
+                (obj1.myName == "player" and obj2.myName == "spring")
                 or
                 (obj1.myName == "spring" and obj2.myName == "player")
             )
             and playerVel >= 0
         ) then
-            print("spring")
+
+            display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
             playerAcc = 0.0
             playerVel = -15
         end
@@ -378,7 +384,7 @@ local function gameLoop()
         updatePlayerPosition()
         updatePlatforms()
         applyCollisionActions()
-        print(#objectsTable)
+        -- print(#objectsTable) -- Checking object numbers
     else
         -- print("died")
     end
