@@ -43,10 +43,10 @@ local maxVel = 7.0
 local bulletSpeed = -4.0
 
 local monster2SheetOptions = {
-    width = 100,
-    height = 59,
-    sheetContentWidth = 400,
-    sheetContentHeight = 118,
+    width = 78,
+    height = 37,
+    sheetContentWidth = 312,
+    sheetContentHeight = 74,
     numFrames = 8
 }
 
