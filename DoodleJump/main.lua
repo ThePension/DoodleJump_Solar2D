@@ -20,10 +20,11 @@ local score = 0
 local died = false
 local haveJetpack = false
 local arePlatformsMoving = false
+local mouseX = 0
  
 local objectsTable = {}
 
-local plateformDimensionX = 75
+local plateformDimensionX = 60
 local plateformDimensionY = 13
 
 local player
@@ -119,8 +120,8 @@ local function playerShoot()
     physics.addBody(bullet, "dynamic", {isSensor=true})
     -- table.insert(objectsTable, bullet) -- Useless
     
-    transition.to( bullet, { y=-40, x=0, time=500,
-            onComplete = function() display.remove( bullet ) print("over") end
+    transition.to( bullet, { y=-40, x=mouseX, time=500,
+            onComplete = function() display.remove( bullet ) end
         } )
 end
 
@@ -174,7 +175,7 @@ local function initializePlatforms()
     newPlatform.y = display.contentHeight - 50
 
     -- Create 10 random platforms
-    for i=1, 10 do
+    for i=1, 20 do
         createSinglePlatform(-display.contentHeight / 4, display.contentHeight)
     end
 end
@@ -270,7 +271,6 @@ local function onCollision(event)
         if (
             obj1.myName == "platform" and obj2.myName == "platform"
         ) then
-            print("platforms collision")
             obj1.hasCollidedWithAnotherPlatform = true
         end
 
@@ -377,6 +377,11 @@ local function applyCollisionActions()
     end
 end
 
+local function onClick(event)
+    -- Keep track of the mouse x coordinate
+    mouseX = event.x
+end
+
 local function gameLoop()
     died = checkPlayerDied()
 
@@ -412,3 +417,4 @@ gameLoopTimer = timer.performWithDelay(1000 / 60, gameLoop, 0)
 
 Runtime:addEventListener("key", updatePlayerXPosition)
 Runtime:addEventListener("collision", onCollision)
+Runtime:addEventListener("mouse", onClick)
