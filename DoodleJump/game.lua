@@ -8,10 +8,6 @@ local composer = require( "composer" )
  
 local scene = composer.newScene()
 
-local function endGame()
-    composer.gotoScene( "menu", { time=800, effect="crossFade" } )
-end
-
 ----------------------
 -- Global variables --
 ----------------------
@@ -46,7 +42,7 @@ local playerDir = -1 -- 1 = left, -1 = right
 
 local playerXVel = 0.0
 
-local maxVel = 7.0
+local maxVel = 6.0
 
 local bulletSpeed = -4.0
 
@@ -97,6 +93,11 @@ local jetpack
 
 local background
 
+local function endGame()
+    composer.setVariable( "finalScore", score )
+    composer.gotoScene( "highscores", { time=800, effect="crossFade" } )
+end
+
 local function endOfJetpack()
     local gravity = 0.005
     haveJetpack = false
@@ -145,12 +146,28 @@ local function playerShoot()
 end
 
 local function createSinglePlatform(offsetStart, offsetEnd)
-    local newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY )
+    local newPlatform
+
+    -- 20% chance to create a blue platform (moving platform)
+    if (math.random(0, 100) > 10) then
+        newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY )
+        newPlatform.x = math.random(newPlatform.width / 2, display.contentWidth - newPlatform.width / 2)
+    else
+        newPlatform = display.newImageRect( mainGroup, "./resources/blueplatform.png", plateformDimensionX, plateformDimensionY )
+        newPlatform.x = display.contentCenterX
+        newPlatform.isMoving = true
+
+        if(math.random(0, 1)) == 0 then
+            newPlatform.movingXVel = -1
+        else
+            newPlatform.movingXVel = 1
+        end
+    end
+
     table.insert( objectsTable, newPlatform )
     physics.addBody( newPlatform, "dynamic", {isSensor=true})
     newPlatform.myName = "platform"
 
-    newPlatform.x = math.random(newPlatform.width / 2, display.contentWidth - newPlatform.width / 2)
     newPlatform.y = math.random(offsetStart, offsetEnd)
 
     newPlatform:toBack()
@@ -172,7 +189,7 @@ end
 
 local function createRandomEntity(offsetStart, offsetEnd)
     if math.random(0, 500) > 1 or haveJetpack then
-        if math.random(0, 40) > 1 or haveJetpack then
+        if math.random(0, 20) > 1 or haveJetpack then
             createSinglePlatform(-display.contentHeight / 5, 0)
         else
             createMonster(-display.contentHeight / 5, 0)
@@ -262,6 +279,26 @@ local function updateScore()
 end
 
 local function updatePlatforms()
+    for i = #objectsTable, 1, -1 do
+        local currentObject = objectsTable[i]
+
+        if currentObject.myName == "platform" then
+            currentPlatform = currentObject
+            if(currentPlatform.isMoving) then
+                if(currentPlatform.x > display.contentWidth - currentPlatform.width / 2) then
+                    print("right border")
+                    currentPlatform.movingXVel = -1
+                elseif (currentPlatform.x < currentPlatform.width / 2) then
+                    print("left border")
+                    currentPlatform.movingXVel = 1
+                end
+
+                currentPlatform.x = currentPlatform.x + currentPlatform.movingXVel
+            end
+        end
+    end
+
+
     -- If the height of the player is above the middle of the screen
     if (player.y < display.contentHeight / 2 and playerVel < 0) then
         score = score - playerVel / 10
