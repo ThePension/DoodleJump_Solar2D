@@ -164,7 +164,7 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform:toBack()
 
     -- 5% chance of adding a spring
-    if math.random(0, 100) <= 5 then
+    if math.random(0, 5) <= 5 then
         local spring = display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
         -- table.insert(objectsTable, spring)
         physics.addBody(spring, "dynamic", {isSensor=true})
@@ -321,10 +321,16 @@ local function onCollision(event)
             )
             and playerVel >= 0
         ) then
-
-            display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
+            
+            -- display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
             playerAcc = 0.0
             playerVel = -15
+
+            transition.to( player, { rotation=360, time=800, transition=easing.linear,  
+                onComplete = function() player:rotate(-360) end
+            } )
+
+            print("spring collision")
         end
 
         if (
