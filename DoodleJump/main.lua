@@ -42,6 +42,26 @@ local maxVel = 7.0
 
 local bulletSpeed = -4.0
 
+local monster2SheetOptions = {
+    width = 100,
+    height = 59,
+    sheetContentWidth = 400,
+    sheetContentHeight = 118,
+    numFrames = 8
+}
+
+local sequences_monster2 = {
+    -- consecutive frames sequence
+    {
+        name = "monster2_animation",
+        frames = { 1, 2, 3, 4, 5 },
+        time = 800,
+        loopCount = 0
+    }
+}
+
+local sheet_monster2 = graphics.newImageSheet("./resources/monster2_sheet.png", monster2SheetOptions )
+
 local jetpack_flip_offset = 0
 local jetpackSheetOptions =
 {
@@ -56,7 +76,7 @@ local sequences_jetpack = {
     -- consecutive frames sequence
     {
         name = "jetpack_animation",
-        frames = { 1, 4, 7, 10, 2, 5, 8, 11, 3, 6, 9, 12 },
+        frames = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 },
         time = 800,
         loopCount = 0
     }
@@ -102,14 +122,21 @@ local function createJetpack(offsetStart, offsetEnd)
 end
 
 local function createMonster(offsetStart, offsetEnd)
-    local newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 60, 80)
-    newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
-    newMonster.y = math.random(offsetStart, offsetEnd)
-    newMonster.myName = "monster"
-    physics.addBody( newMonster, "static", {isSensor=true})
-    table.insert( objectsTable, newMonster )
+    local monster2_animation = display.newSprite(mainGroup, sheet_monster2, sequences_monster2)
+    monster2_animation.myName = "monster"
 
-    newMonster:toBack()
+    -- local newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 60, 80)
+    -- newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
+    -- newMonster.y = math.random(offsetStart, offsetEnd)
+    -- newMonster.myName = "monster"
+    monster2_animation.x = math.random(0 + monster2_animation.width / 2, display.contentWidth - monster2_animation.width / 2)
+    monster2_animation.y = math.random(offsetStart, offsetEnd)
+    physics.addBody( monster2_animation, "static", {isSensor=true})
+    table.insert( objectsTable, monster2_animation )
+
+    monster2_animation:play()
+
+    monster2_animation:toBack()
 end
 
 local function playerShoot()
