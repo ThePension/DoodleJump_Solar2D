@@ -20,8 +20,8 @@ function scene:create( event )
     background.x = display.contentCenterX
     background.y = display.contentCenterY
 
-    local playButton = display.newText( sceneGroup, "Play", display.contentCenterX, display.contentCenterY - 100, native.systemFont, 44 )
-    playButton:setFillColor( 0.82, 0.86, 1 )
+    local playButton = display.newText( sceneGroup, "Play", display.contentCenterX, display.contentCenterY - 100, "./resources/DoodleJump.ttf", 44 )
+	playButton:setFillColor( 255, 0, 0 )
 
     playButton:addEventListener( "tap", gotoGame )
 end

@@ -415,7 +415,6 @@ local function onClick(event)
 end
 
 local function gameLoop()
-    print("gameloop")
     died = checkPlayerDied() or player.monsterCollision
 
     if not died then
