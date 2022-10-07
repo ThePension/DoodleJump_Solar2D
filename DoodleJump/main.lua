@@ -164,7 +164,7 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform:toBack()
 
     -- 5% chance of adding a spring
-    if math.random(0, 5) <= 5 then
+    if math.random(0, 100) <= 5 then
         local spring = display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
         -- table.insert(objectsTable, spring)
         physics.addBody(spring, "dynamic", {isSensor=true})
@@ -179,8 +179,8 @@ local function createSinglePlatform(offsetStart, offsetEnd)
 end
 
 local function createRandomEntity(offsetStart, offsetEnd)
-    if math.random(0, 50) > 1 or haveJetpack then
-        if math.random(0, 20) > 1 or haveJetpack then
+    if math.random(0, 500) > 1 or haveJetpack then
+        if math.random(0, 40) > 1 or haveJetpack then
             createSinglePlatform(-display.contentHeight / 5, 0)
         else
             createMonster(-display.contentHeight / 5, 0)
@@ -329,8 +329,6 @@ local function onCollision(event)
             transition.to( player, { rotation=360, time=800, transition=easing.linear,  
                 onComplete = function() player:rotate(-360) end
             } )
-
-            print("spring collision")
         end
 
         if (
@@ -397,7 +395,7 @@ local function applyCollisionActions()
             elseif currentObject.myName == "jetpack" then
                 display.remove(jetpack)
                 table.remove(objectsTable, i)
-                jetpack.hasCollided = false
+                jetpack = nil
 
                 createRandomEntity(-display.contentHeight / 5, 0)
             end
