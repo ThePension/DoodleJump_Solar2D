@@ -368,10 +368,19 @@ local function onCollision(event)
                 or
                 (obj1.myName == "player" and obj2.myName == "monster")
                 then
+            local collidedMonster
             if obj1.myName == "monster" then
-                obj1.hasCollided = true
-            else
-                obj2.hasCollided = true
+                collidedMonster = obj1
+            end
+
+            collidedMonster.hasCollided = true
+
+            -- Check if the was above the monster (jump on head)
+            if((player.y + player.height / 2 < collidedMonster.y) 
+                and playerVel >= 0)
+            then
+                playerAcc = 0.0
+                playerVel = -maxVel
             end
         end
     end
