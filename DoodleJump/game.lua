@@ -48,12 +48,16 @@ local gameLoopTimer
 
 local bulletSpeed = -4.0
 
+
+-- Sounds related variables
 local jumpSound = nil
 local springSound = nil
 local monsterSound = nil
 local jetpackSound = nil
 local shootSound = nil
 local jumpOnMonsterSound = nil
+
+local audioChannelCount = 1
 
 local monster2SheetOptions = {
     width = 78,
@@ -123,9 +127,9 @@ end
 
 local function createMonster(offsetStart, offsetEnd)
     local newMonster = nil
-    
+
     if math.random(0, 1) == 1 then
-        newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 60, 80)
+        newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 50, 66)
         newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
         newMonster.y = math.random(offsetStart, offsetEnd)
     else
@@ -135,6 +139,15 @@ local function createMonster(offsetStart, offsetEnd)
         newMonster:play()
     end
 
+    newMonster.audioChannelNum = audioChannelCount
+
+    audio.play(monsterSound, {
+        channel = audioChannelCount,
+        loops = -1,
+    })
+
+    audioChannelCount = (audioChannelCount + 1) % 32 + 1
+    
     newMonster:toBack()
     physics.addBody(newMonster, "static", {isSensor=true})
     table.insert(objectsTable, newMonster)
@@ -147,7 +160,6 @@ local function playerShoot()
     bullet.y = player.y - player.height / 2
     bullet.myName = "bullet"
     physics.addBody(bullet, "dynamic", {isSensor=true})
-    -- table.insert(objectsTable, bullet) -- Useless
 
     audio.play(shootSound)
     
@@ -200,7 +212,7 @@ end
 
 local function createRandomEntity(offsetStart, offsetEnd)
     if math.random(0, 500) > 1 or haveJetpack then
-        if math.random(0, 20) > 1 or haveJetpack then
+        if math.random(0, 100) > 1 or haveJetpack then
             createSinglePlatform(-display.contentHeight / 5, 0)
         else
             createMonster(-display.contentHeight / 5, 0)
@@ -349,6 +361,21 @@ local function onCollision(event)
         then
             obj1.hasCollided = true
             obj2.hasCollided = true
+
+            local collidedMonster = nil
+
+            if(obj1.myName == "monster") then
+                collidedMonster = obj1
+            else
+                collidedMonster = obj2
+            end
+
+            print("channel num : " .. collidedMonster.audioChannelNum)
+            -- Stop monster sound
+            audio.stop(collidedMonster.audioChannelNum)
+
+            score = score + 50
+            updateScore()
         end
 
         if (
@@ -364,14 +391,14 @@ local function onCollision(event)
 
             audio.play(springSound)
 
-            transition.to( player, { rotation=360, time=800, transition=easing.linear,  
+            transition.to(player, { rotation=360, time=800, transition=easing.linear,  
                 onComplete = function() player:rotate(-360) end
-            } )
+            })
         end
 
         if (
             (
-                (obj1.myName == "player" and obj2.myName == "platform" ) 
+                (obj1.myName == "player" and obj2.myName == "platform") 
                 or
                 (obj1.myName == "platform" and obj2.myName == "player")
             )
@@ -414,7 +441,7 @@ local function onCollision(event)
 
             collidedMonster.hasCollided = true
 
-            -- Check if the was above the monster (jump on head)
+            -- Check if the player was above the monster (jump on head)
             if((player.y + player.height / 2 < collidedMonster.y) 
                 and playerVel >= 0)
             then
@@ -422,6 +449,12 @@ local function onCollision(event)
                 playerVel = -maxVel
 
                 audio.play(jumpOnMonsterSound)
+
+                -- Stop monster sound
+                audio.stop(collidedMonster.audioChannelNum)
+
+                score = score + 100
+                updateScore()
             else
                 player.monsterCollision = true
             end
@@ -479,15 +512,20 @@ local function gameLoop()
 
     -- Remove platforms which have drifted off screen
     for i = #objectsTable, 1, -1 do
-        local currentPlatform = objectsTable[i]
+        local currentObject = objectsTable[i]
  
-        if (currentPlatform.y - currentPlatform.height / 2 > display.contentHeight)
+        if (currentObject.y - currentObject.height / 2 > display.contentHeight)
         then
-            display.remove(currentPlatform.attachedObject)
-            display.remove(currentPlatform)
+            if (currentObject.myName == "monster") then
+                -- Stop monster sound
+                audio.stop(currentObject.audioChannelNum)
+            end
+
+            display.remove(currentObject.attachedObject)
+            display.remove(currentObject)
             table.remove(objectsTable, i)
             
-            if not (currentPlatform.myName == "spring") then
+            if not (currentObject.myName == "spring") then
                 createRandomEntity(-display.contentHeight / 5, 0)
             end
         end
@@ -571,6 +609,19 @@ function scene:hide( event )
         timer.cancel( gameLoopTimer )
  
     elseif ( phase == "did" ) then
+        for i = #objectsTable, 1, -1 do
+            local currentObject = objectsTable[i]
+
+            if (currentObject.myName == "monster") then
+                -- Stop monster sound
+                audio.stop(currentObject.audioChannelNum)
+            end
+
+            display.remove(currentObject.attachedObject)
+            display.remove(currentObject)
+            table.remove(objectsTable, i)
+        end
+
         -- Code here runs immediately after the scene goes entirely off screen
         Runtime:removeEventListener("key", updatePlayerXPosition)
         Runtime:removeEventListener("collision", onCollision)

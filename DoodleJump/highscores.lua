@@ -51,7 +51,7 @@ function scene:create( event )
     loadScores()
 
     -- Insert the saved score from the last game into the table, then reset it
-    table.insert( scoresTable, composer.getVariable( "finalScore" ) )
+    table.insert( scoresTable, math.floor(composer.getVariable( "finalScore" )))
     composer.setVariable( "finalScore", 0 )
 
     -- Sort the table entries from highest to lowest
