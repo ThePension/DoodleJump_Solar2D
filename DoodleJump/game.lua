@@ -46,6 +46,13 @@ local maxVel = 6.0
 
 local bulletSpeed = -4.0
 
+local jumpSound = nil
+local springSound = nil
+local monsterSound = nil
+local jetpackSound = nil
+local shootSound = nil
+local jumpOnMonsterSound = nil
+
 local monster2SheetOptions = {
     width = 78,
     height = 37,
@@ -139,6 +146,8 @@ local function playerShoot()
     bullet.myName = "bullet"
     physics.addBody(bullet, "dynamic", {isSensor=true})
     -- table.insert(objectsTable, bullet) -- Useless
+
+    audio.play(shootSound)
     
     transition.to( bullet, { y=-40, x=mouseX, time=500,
             onComplete = function() display.remove( bullet ) end
@@ -353,6 +362,8 @@ local function onCollision(event)
             playerAcc = 0.0
             playerVel = -15
 
+            audio.play(springSound)
+
             transition.to( player, { rotation=360, time=800, transition=easing.linear,  
                 onComplete = function() player:rotate(-360) end
             } )
@@ -378,6 +389,7 @@ local function onCollision(event)
             if (player.y  + player.height / 2 < collidedPlatform.y) then
                 playerAcc = 0.0
                 playerVel = -maxVel
+               audio.play(jumpSound)
             end
         elseif 
             (obj1.myName == "jetpack" and obj2.myName == "player" ) 
@@ -408,6 +420,8 @@ local function onCollision(event)
             then
                 playerAcc = 0.0
                 playerVel = -maxVel
+
+                audio.play(jumpOnMonsterSound)
             else
                 player.monsterCollision = true
             end
@@ -516,6 +530,13 @@ function scene:create( event )
     player.y = display.contentHeight - 250
     physics.addBody( player, "dynamic", { radius=30, isSensor=true } )
     player.myName = "player"
+
+    jumpSound = audio.loadSound("./resources/sounds/jump.wav")
+    springSound = audio.loadSound("./resources/sounds/spring.mp3")
+    monsterSound = audio.loadSound("./resources/sounds/monster.mp3")
+    jetpackSound = audio.loadSound("./resources/sounds/jetpack.mp3")
+    shootSound = audio.loadSound("./resources/sounds/pistol_shoot.mp3")
+    jumpOnMonsterSound = audio.loadSound("./resources/sounds/jumponmonster.mp3")
 
     initializePlatforms()
 end
