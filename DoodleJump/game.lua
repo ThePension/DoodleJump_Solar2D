@@ -8,9 +8,12 @@ local composer = require( "composer" )
  
 local scene = composer.newScene()
 
-----------------------
--- Global variables --
-----------------------
+
+-- -----------------------------------------------------------------------------------
+-- Global variables
+-- -----------------------------------------------------------------------------------
+
+
 local physics = require("physics")
 physics.start()
 physics.setGravity(0, 0)
@@ -114,6 +117,12 @@ local function endOfJetpack()
     haveJetpack = false
     jetpack_animation.x = display.contentWidth * 2
 end
+
+
+-- -----------------------------------------------------------------------------------
+-- Objects creation function
+-- -----------------------------------------------------------------------------------
+
 
 local function createJetpack(offsetStart, offsetEnd)
     jetpack = display.newImageRect(mainGroup, "./resources/jetpack.png", 25, 38)
@@ -239,6 +248,12 @@ local function initializePlatforms()
     end
 end
 
+
+-- -----------------------------------------------------------------------------------
+-- Gameplay functions
+-- -----------------------------------------------------------------------------------
+
+
 local function updatePlayerPosition()
     -- Update player x position
     player.x = player.x + playerXVel
@@ -339,6 +354,43 @@ local function updatePlatforms()
         arePlatformsMoving = false
     end
 end
+
+local function checkPlayerDied()
+    return player.y - player.height / 2 > display.contentHeight
+end
+
+local function applyCollisionActions()
+    for i = #objectsTable, 1, -1 do
+        local currentObject = objectsTable[i]
+
+        if currentObject.hasCollided then
+            if currentObject.myName == "monster" then
+                display.remove(currentObject)
+                table.remove(objectsTable, i)
+                createRandomEntity(-display.contentHeight / 5, 0)
+            elseif currentObject.myName == "bullet" then
+                display.remove(currentObject)
+            elseif currentObject.myName == "jetpack" then
+                display.remove(jetpack)
+                table.remove(objectsTable, i)
+                jetpack = nil
+
+                createRandomEntity(-display.contentHeight / 5, 0)
+            end
+        elseif currentObject.hasCollidedWithAnotherPlatform then
+            display.remove(currentObject.attachedObject)
+            display.remove(currentObject)
+            table.remove(objectsTable, i)
+            createSinglePlatform(-display.contentHeight / 5, 0)
+        end
+    end
+end
+
+
+-- -----------------------------------------------------------------------------------
+-- Events functions
+-- -----------------------------------------------------------------------------------
+
 
 local function onCollision(event)
     if (event.phase == "began") then
@@ -462,41 +514,16 @@ local function onCollision(event)
     end
 end
 
-local function checkPlayerDied()
-    return player.y - player.height / 2 > display.contentHeight
-end
-
-local function applyCollisionActions()
-    for i = #objectsTable, 1, -1 do
-        local currentObject = objectsTable[i]
-
-        if currentObject.hasCollided then
-            if currentObject.myName == "monster" then
-                display.remove(currentObject)
-                table.remove(objectsTable, i)
-                createRandomEntity(-display.contentHeight / 5, 0)
-            elseif currentObject.myName == "bullet" then
-                display.remove(currentObject)
-            elseif currentObject.myName == "jetpack" then
-                display.remove(jetpack)
-                table.remove(objectsTable, i)
-                jetpack = nil
-
-                createRandomEntity(-display.contentHeight / 5, 0)
-            end
-        elseif currentObject.hasCollidedWithAnotherPlatform then
-            display.remove(currentObject.attachedObject)
-            display.remove(currentObject)
-            table.remove(objectsTable, i)
-            createSinglePlatform(-display.contentHeight / 5, 0)
-        end
-    end
-end
-
 local function onClick(event)
     -- Keep track of the mouse x coordinate
     mouseX = event.x
 end
+
+
+-- -----------------------------------------------------------------------------------
+-- GameLoop
+-- -----------------------------------------------------------------------------------
+
 
 local function gameLoop()
     died = checkPlayerDied() or player.monsterCollision
