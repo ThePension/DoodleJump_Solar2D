@@ -15,34 +15,36 @@ local physics = require("physics")
 physics.start()
 physics.setGravity(0, 0)
 
--- Set up display groups
+-- Display Groups
 local backGroup
 local mainGroup
 local uiGroup
 
+-- UI related variables
+local scoreText
+local background
+
+-- Player related variables
 local score = 0
 local died = false
 local haveJetpack = false
-local arePlatformsMoving = false
-local mouseX = 0
+local player
+local gravity = 0.005
+local playerVel = 0.0
+local playerAcc = 0.0
+local playerDir = -1 -- 1 = left, -1 = right
+local playerXVel = 0.0
+
+local maxVel = 6.0
  
 local objectsTable = {}
 
 local plateformDimensionX = 60
 local plateformDimensionY = 13
 
-local player
+local arePlatformsMoving = false
+local mouseX = 0
 local gameLoopTimer
-local scoreText
-
-local gravity = 0.005
-local playerVel = 0.0
-local playerAcc = 0.0
-local playerDir = -1 -- 1 = left, -1 = right
-
-local playerXVel = 0.0
-
-local maxVel = 6.0
 
 local bulletSpeed = -4.0
 
@@ -98,8 +100,6 @@ local jetpack_animation
 
 local jetpack
 
-local background
-
 local function endGame()
     composer.setVariable( "finalScore", score )
     composer.gotoScene( "highscores", { time=800, effect="crossFade" } )
@@ -122,21 +122,23 @@ local function createJetpack(offsetStart, offsetEnd)
 end
 
 local function createMonster(offsetStart, offsetEnd)
-    local monster2_animation = display.newSprite(mainGroup, sheet_monster2, sequences_monster2)
-    monster2_animation.myName = "monster"
+    local newMonster = nil
+    
+    if math.random(0, 1) == 1 then
+        newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 60, 80)
+        newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
+        newMonster.y = math.random(offsetStart, offsetEnd)
+    else
+        newMonster = display.newSprite(mainGroup, sheet_monster2, sequences_monster2)
+        newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
+        newMonster.y = math.random(offsetStart, offsetEnd)
+        newMonster:play()
+    end
 
-    -- local newMonster = display.newImageRect(mainGroup, "./resources/monster.png", 60, 80)
-    -- newMonster.x = math.random(0 + newMonster.width / 2, display.contentWidth - newMonster.width / 2)
-    -- newMonster.y = math.random(offsetStart, offsetEnd)
-    -- newMonster.myName = "monster"
-    monster2_animation.x = math.random(0 + monster2_animation.width / 2, display.contentWidth - monster2_animation.width / 2)
-    monster2_animation.y = math.random(offsetStart, offsetEnd)
-    physics.addBody( monster2_animation, "static", {isSensor=true})
-    table.insert( objectsTable, monster2_animation )
-
-    monster2_animation:play()
-
-    monster2_animation:toBack()
+    newMonster:toBack()
+    physics.addBody(newMonster, "static", {isSensor=true})
+    table.insert(objectsTable, newMonster)
+    newMonster.myName = "monster"
 end
 
 local function playerShoot()
@@ -295,10 +297,8 @@ local function updatePlatforms()
             currentPlatform = currentObject
             if(currentPlatform.isMoving) then
                 if(currentPlatform.x > display.contentWidth - currentPlatform.width / 2) then
-                    print("right border")
                     currentPlatform.movingXVel = -1
                 elseif (currentPlatform.x < currentPlatform.width / 2) then
-                    print("left border")
                     currentPlatform.movingXVel = 1
                 end
 
