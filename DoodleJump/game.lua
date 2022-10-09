@@ -220,7 +220,7 @@ local function createSinglePlatform(offsetStart, offsetEnd)
 end
 
 local function createRandomEntity(offsetStart, offsetEnd)
-    if math.random(0, 50) > 1 or haveJetpack then
+    if math.random(0, 500) > 1 or haveJetpack then
         if math.random(0, 100) > 1 or haveJetpack then
             createSinglePlatform(-display.contentHeight / 5, 0)
         else
