@@ -131,7 +131,7 @@ local function createJetpack(offsetStart, offsetEnd)
     jetpack.myName = "jetpack"
     physics.addBody( jetpack, "static")
     table.insert( objectsTable, jetpack )
-    timer.performWithDelay(5000, endOfJetpack)
+    timer.performWithDelay(3000, endOfJetpack)
 end
 
 local function createMonster(offsetStart, offsetEnd)
@@ -220,7 +220,7 @@ local function createSinglePlatform(offsetStart, offsetEnd)
 end
 
 local function createRandomEntity(offsetStart, offsetEnd)
-    if math.random(0, 500) > 1 or haveJetpack then
+    if math.random(0, 50) > 1 or haveJetpack then
         if math.random(0, 100) > 1 or haveJetpack then
             createSinglePlatform(-display.contentHeight / 5, 0)
         else
@@ -479,6 +479,8 @@ local function onCollision(event)
             jetpack.hasCollided = true
 
             jetpack_animation:play()
+            
+            audio.play(jetpackSound)
 
             haveJetpack = true
         elseif
