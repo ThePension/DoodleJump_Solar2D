@@ -180,10 +180,24 @@ end
 local function createSinglePlatform(offsetStart, offsetEnd)
     local newPlatform
 
-    -- 20% chance to create a blue platform (moving platform)
+    -- 10% chance to create a blue platform (moving platform)
     if (math.random(0, 100) > 10) then
         newPlatform = display.newImageRect( mainGroup, "./resources/greenplatform.png", plateformDimensionX, plateformDimensionY )
         newPlatform.x = math.random(newPlatform.width / 2, display.contentWidth - newPlatform.width / 2)
+
+            -- 5% chance of adding a spring
+        if math.random(0, 100) <= 5 then
+            local spring = display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
+            -- table.insert(objectsTable, spring)
+            physics.addBody(spring, "dynamic", {isSensor=true})
+            spring.myName = "spring"
+
+            spring.x = math.random(newPlatform.x - newPlatform.width / 3, newPlatform.x + newPlatform.width / 3)
+            spring.y = newPlatform.y - newPlatform.height / 2 - spring.height / 2 + 3
+            spring:toBack()
+
+            newPlatform.attachedObject = spring
+        end
     else
         newPlatform = display.newImageRect( mainGroup, "./resources/blueplatform.png", plateformDimensionX, plateformDimensionY )
         newPlatform.x = display.contentCenterX
@@ -203,20 +217,6 @@ local function createSinglePlatform(offsetStart, offsetEnd)
     newPlatform.y = math.random(offsetStart, offsetEnd)
 
     newPlatform:toBack()
-
-    -- 5% chance of adding a spring
-    if math.random(0, 100) <= 5 then
-        local spring = display.newImageRect(mainGroup, "./resources/compact_spring.png", 15, 10)
-        -- table.insert(objectsTable, spring)
-        physics.addBody(spring, "dynamic", {isSensor=true})
-        spring.myName = "spring"
-
-        spring.x = math.random(newPlatform.x - newPlatform.width / 3, newPlatform.x + newPlatform.width / 3)
-        spring.y = newPlatform.y - newPlatform.height / 2 - spring.height / 2 + 3
-        spring:toBack()
-
-        newPlatform.attachedObject = spring
-    end
 end
 
 local function createRandomEntity(offsetStart, offsetEnd)
